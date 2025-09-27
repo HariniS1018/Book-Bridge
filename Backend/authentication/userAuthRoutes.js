@@ -8,12 +8,14 @@ import {
   logout
 } from "./userAuthControllers.js";
 
+console.log("User Auth Routes loaded");
 userAuthRoutes.post("/registerUser", registerUser);
+console.log("User Auth Routes loaded");
 userAuthRoutes.post("/loginUser", loginUser);
 userAuthRoutes.post(
   "/refreshAccessToken",
   refreshAccessToken
 );
-userAuthRoutes.post("/logout", logout);
+userAuthRoutes.post("/logoutUser", logout);
 
 export { userAuthRoutes };

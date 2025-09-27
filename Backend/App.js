@@ -1,20 +1,30 @@
-import dotenv from 'dotenv';
+import cors from "cors";
+import dotenv from "dotenv";
+import express from "express";
+import { errorHandler } from "./middlewares/errorHandler.js";
+import { notFoundHandler } from "./middlewares/notFoundHandler.js";
+
 dotenv.config();
-
-import express from 'express';
 const app = express();
+const FRONTEND_URL = process.env.FRONTEND_URL;
 
-app.use(express.json()); // For JSON data
 app.use(express.urlencoded({ extended: true })); // For URL-encoded form data
+app.use(express.json());
+app.use(
+  cors({
+    origin: FRONTEND_URL,
+    credentials: true,
+  })
+);
 
-import dbRoutes from './db/createTableRoutes.js';
-app.use('/db', dbRoutes);
+import dbRoutes from "./db/createTableRoutes.js";
+app.use("/db", dbRoutes);
 
 import { userAuthRoutes } from "./authentication/userAuthRoutes.js";
 app.use("/userAuth", userAuthRoutes);
+console.log("UserAuth routes mounted at /userAuth");
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+app.use(notFoundHandler); // Catch-all 404
+app.use(errorHandler); // Global error handler
 
+export default app;

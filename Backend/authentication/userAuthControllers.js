@@ -4,11 +4,13 @@ import {
   loginUserService,
   refreshAccessTokenService,
   logoutUserService,
-  authenticateTokenService,
 } from "./userAuthServices.js";
 
 async function registerUser(req, res) {
-  const { userName, emailId, registrationNumber, password } = req.body;
+  const userName = req.body.userName;
+  const emailId = req.body.emailId;
+  const registrationNumber = req.body.registrationNumber;
+  const password = req.body.password;
 
   if (userName === undefined || emailId === undefined || registrationNumber == undefined || password === undefined) {
     return res.status(400).json({ error: "Missing required fields" });
@@ -55,22 +57,27 @@ async function registerUser(req, res) {
 }
 
 async function loginUser(req, res) {
-  const { emailId, password } = req.body;
+  const emailId = req.body.emailId;
+  const password = req.body.password;
 
   if (emailId === undefined || password === undefined) {
-    return res.status(400).json({ error: "Missing required fields: emailId, password." + error.message });
-  } 
-  
-  if (password.length < 8 ||
+    return res
+      .status(400)
+      .json({ error: "Missing required fields: emailId, password." });
+  }
+
+  if (
+    password.length < 8 ||
     !/[A-Za-z]/.test(password) || // at least one letter
     !/[0-9]/.test(password) // at least one number
   ) {
     return res.status(400).json({
       error:
-        "Invalid password. Password must be at least 8 characters long, and contain at least one letter and one number." + error.message,
+        "Invalid password. Password must be at least 8 characters long, and contain at least one letter and one number." +
+        error.message,
     });
   }
-  
+
   if (!/^\S+@\S+\.\S+$/.test(emailId)) {
     return res.status(400).json({
       error: "Invalid email format." + error.message,

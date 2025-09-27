@@ -16,7 +16,7 @@ const pool = getPool();
 const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET_KEY;
 const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET_KEY;
 const ACCESS_TOKEN_LIFETIME = process.env.ACCESS_TOKEN_LIFETIME;
-const REFRESH_TOKEN_LIFETIME = process.env.REFRESH_TOKEN_LIFETIME;
+const REFRESH_TOKEN_LIFETIME = Number(process.env.REFRESH_TOKEN_LIFETIME) || 7;
 
 if (!ACCESS_TOKEN_SECRET || !REFRESH_TOKEN_SECRET) {
   throw new Error("Set JWT SECRETS as environment variables");
@@ -28,10 +28,20 @@ function generateAccessToken(user) {
 }
 
 function generateRefreshToken(user) {
-  const expirationDate = new Date();
-  expirationDate.setDate(expirationDate.getDate() + REFRESH_TOKEN_LIFETIME);
-  const expires_in = Math.floor(expirationDate.getTime() / 1000);
+  console.log("Type of REFRESH_TOKEN_LIFETIME:", typeof REFRESH_TOKEN_LIFETIME);
 
+  const now = new Date();
+  const expirationDate = new Date(now);
+
+  expirationDate.setDate(now.getDate() + REFRESH_TOKEN_LIFETIME); // safe now
+
+  console.log("Current time:", now.toISOString());
+  console.log("REFRESH_TOKEN_LIFETIME:", REFRESH_TOKEN_LIFETIME);
+  console.log("Expires on:", expirationDate.toISOString());
+
+  const expires_in = Math.floor(expirationDate.getTime() / 1000);
+  console.log("Refresh token expires at (epoch):", expires_in);
+  
   const refreshToken = jwt.sign(
     { userId: user.user_id, exp: expires_in },
     REFRESH_TOKEN_SECRET
@@ -69,7 +79,7 @@ async function registerUserService(
     userName,
     emailId,
     registrationNumber,
-    password
+    hashedPassword
   );
   return user;
 }
@@ -83,6 +93,7 @@ async function loginUserService(emailId, password) {
   if (!user) {
     throw new Error("Invalid credentials. User with this email ID is not found");
   }
+  console.log("User found:", user);
   const passwordMatch = await bcrypt.compare(password, user.password);
 
   if (!passwordMatch) {
@@ -160,10 +171,17 @@ async function logoutUserService(BearerHeader) {
       throw new Error("Invalid refresh token");
     }
 
-    const result = await updateRefreshToken(client, refreshToken);
-    if (result === null) {
-      throw new Error("Refresh token not found");
+    const isvalid = await getRefreshToken(client, refreshToken);
+    if (isvalid){
+      const result = await updateRefreshToken(client, refreshToken);
+      if (result === null) {
+        throw new Error("Refresh token not found");
+      }
     }
+    else{
+      throw new Error("Refresh token is already invalidated or logged out.");
+    }
+    
   } catch (error) {
     console.error("[Services] Error in logoutUser:", error.message);
     throw error;

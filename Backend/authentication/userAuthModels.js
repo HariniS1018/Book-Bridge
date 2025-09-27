@@ -1,6 +1,6 @@
 async function getUserByEmailId(client, emailId) {
   try {
-    const user = await client.query("SELECT * FROM users WHERE emailId = $1", [
+    const user = await client.query("SELECT * FROM users WHERE email_id = $1", [
       emailId,
     ]);
     if (user.rows.length > 0) {
