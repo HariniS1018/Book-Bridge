@@ -1,0 +1,35 @@
+1. Folders controllers, routers, models, services should be within Book-Bridge/Backend/.
+
+2. move the following code to server.js (because server.js is the entry point)-> look for this file in my branch.
+    sequelize.authenticate()
+  .then(() => {
+    console.log("Database connected!");
+    return sequelize.sync({ alter: true });
+  })
+  .then(() => {
+    console.log("All models synced!");
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("DB Error:", err);
+  });
+
+3. define associations (you could refer to the association relationships between tables in db.pdf under the heading `business logic`.)
+
+4. rename or move init/db.js to db/sequelize.js
+
+5. why importing models/index.js in app.js?
+
+6. Thanks for examples to know how to use this sequelize. Got it in controllers.
+
+7. in the following set of codes, remove created_at field and set timestamps to true.
+    created_at: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+  }, {
+    tableName: "users",
+    timestamps: false,
+  });
