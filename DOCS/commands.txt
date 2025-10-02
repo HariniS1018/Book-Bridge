@@ -6,3 +6,5 @@
 Docker commands:
 1. docker pull redis
 2. docker run -d --name redis-server -p 6379:6379 redis
+3. docker stop CONTAINER_ID
+4. docker start CONTAINER_ID
