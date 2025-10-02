@@ -2,11 +2,10 @@ import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 dotenv.config();
 
-
 // Step 1: Create a transporter (the mailman)
-// its indirect version of saying 
-// host: "smtp.google.com" (Gmail's SMTP server, use when u need full ctrl over SMTP settings), 
-// port: 587 ( 587 for STARTLS - secure connection after handshake, 465 for SSL/TLS - secure from the start ), 
+// its indirect version of saying
+// host: "smtp.google.com" (Gmail's SMTP server, use when u need full ctrl over SMTP settings),
+// port: 587 ( 587 for STARTLS - secure connection after handshake, 465 for SSL/TLS - secure from the start ),
 // secure: false (tells nodemailer whether to use SSL/TLS encryption immediately, 'false' means: 'Start with plain connection, then upgrade to secure (STARTTLS)'.)
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -17,20 +16,16 @@ const transporter = nodemailer.createTransport({
 });
 
 await transporter.verify();
-console.log("Server is ready to take our messages");
+console.log("Mailer ready");
 
-// Step 2: generate OTP
-const generateOTP = () =>
-  Math.floor(100000 + Math.random() * 900000).toString();
-const otp = generateOTP();
-
-// Step 3: Define the mail
-const mailOptions = {
-  from: process.env.EMAIL_USER,
-  to: process.env.CLIENT_EMAIL,
-  subject: "OTP from BookBridge! Enjoy Reading!",
-  text: `Hi there! Your OTP is ${otp}. It is valid for only 5 minutes.`,
-  html: `
+export async function sendOtpEmail(recipientEmail, otp) {
+  // Step 2: Define the mail
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: recipientEmail,
+    subject: "OTP from BookBridge! Enjoy Reading!",
+    text: `Hi there! Your OTP is ${otp}. It is valid for only 5 minutes.`,
+    html: `
       <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee;">
         <h2 style="color: #4CAF50;">BookBridge Email Verification</h2>
         <p>Hi there!</p>
@@ -40,14 +35,21 @@ const mailOptions = {
         <p>Enjoy reading and sharing with BookBridge!</p>
       </div>
     `,
-};
+  };
 
-// Step 4: Send the mail
-(async () => {
+  // Step 3: Send the mail
   try {
     const info = await transporter.sendMail(mailOptions);
-    console.log("Message sent: %s", info.messageId);
+    console.log("Email sent:", info.messageId);
+    return true;
   } catch (err) {
     console.error("Error while sending mail", err);
+    return false;
   }
-})();
+}
+
+
+// // Step 2: generate OTP
+// const generateOTP = () =>
+//   Math.floor(100000 + Math.random() * 900000).toString();
+// const otp = generateOTP();

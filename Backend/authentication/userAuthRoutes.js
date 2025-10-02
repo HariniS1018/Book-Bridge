@@ -3,14 +3,16 @@ const userAuthRoutes = express.Router();
 
 import {
   registerUser,
+  verifyOtp,
+  resendOtp,
   loginUser,
   refreshAccessToken,
   logout
 } from "./userAuthControllers.js";
 
-console.log("User Auth Routes loaded");
 userAuthRoutes.post("/registerUser", registerUser);
-console.log("User Auth Routes loaded");
+userAuthRoutes.post("/verifyOtp", verifyOtp);
+userAuthRoutes.post("/resendOtp", resendOtp);
 userAuthRoutes.post("/loginUser", loginUser);
 userAuthRoutes.post(
   "/refreshAccessToken",

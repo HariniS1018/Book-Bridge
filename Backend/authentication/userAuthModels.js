@@ -18,6 +18,23 @@ async function getUserByEmailId(client, emailId) {
   }
 }
 
+async function getUserByRegistrationNumber(client, registrationNumber) {
+  try {
+    const user = await client.query("SELECT * FROM users WHERE registration_number = $1", [
+      registrationNumber,
+    ]);
+    if (user.rows.length > 0) {
+      return user.rows[0];
+    } else {
+      console.log("[Models] No user found for the given registration number.");
+      return null;
+    }
+  } catch (error) {
+    console.error("[Models] Error fetching user by registration number:", error.message);
+    throw error;
+  }
+}
+
 async function registerUserModel(
   client,
   userName,
@@ -82,6 +99,7 @@ async function updateRefreshToken(client, refreshToken) {
 
 export {
   getUserByEmailId,
+  getUserByRegistrationNumber,
   registerUserModel,
   storeRefreshToken,
   getRefreshToken,

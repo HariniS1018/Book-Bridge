@@ -1,6 +1,8 @@
 import { error } from "console";
 import {
   registerUserService,
+  verifyOtpAndRegisterUserService,
+  resendOtpService,
   loginUserService,
   refreshAccessTokenService,
   logoutUserService,
@@ -47,11 +49,83 @@ async function registerUser(req, res) {
       registrationNumber,
       password
     );
-    res.status(201).json({ message: "Registration successful" });
+    if (user) {
+      res.status(201).json({ message: "OTP sent to your email" });
+    }
+    else{
+      res.status(500).json({ error: "Registration failed. Please try again." });
+    }
   } catch (error) {
-    if (error.message.includes("Invalid phone number")) {
+    if (error.message.includes("Invalid Email id")) {
       return res.status(400).json({ error: error.message });
     }
+    res.status(500).json({ error: "Registration failed. Internal server error: " + error.message });
+  }
+}
+
+async function verifyOtp(req, res) {
+  const emailId = req.body.emailId;
+  const otp = req.body.otp;
+
+  if (
+    emailId === undefined ||
+    otp === undefined
+  ) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+  if (typeof otp !== "string" || otp.trim().length !== 6) {
+    return res.status(400).json({
+      error: "Invalid OTP. OTP must be a 6-digit number.",
+    });
+  }
+  if (!/^\d{6}$/.test(otp)) {
+    return res.status(400).json({
+      error: "Invalid OTP format. OTP must be a 6-digit number.",
+    });
+  }
+  if (!/^\S+@\S+\.\S+$/.test(emailId)) {
+    return res.status(400).json({
+      error: "Invalid email format.",
+    });
+  }
+
+  try {
+    const user = await verifyOtpAndRegisterUserService(
+      emailId,
+      otp
+    );
+    if (user) {
+      res.status(201).json({ message: "User registered successfully", user });
+    } else {
+      res.status(500).json({ error: "Registration failed. Please try again." });
+    }
+  } catch (error) {
+    if (error.message.includes("Invalid or expired OTP")) {
+      return res.status(400).json({ error: error.message });
+    }
+    res
+      .status(500)
+      .json({
+        error: "Registration failed. Internal server error: " + error.message,
+      });
+  }
+}
+
+async function resendOtp(req, res) {
+  const emailId = req.body.emailId;
+
+  if (emailId === undefined) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  try {
+    const isOtpSent = await resendOtpService(emailId);
+    if (isOtpSent) {
+      res.status(200).json({ message: "OTP resent successfully" });
+    } else {
+      res.status(500).json({ error: "Failed to resend OTP" });
+    }
+  } catch (error) {
     res.status(500).json({ error: "Internal server error: " + error.message });
   }
 }
@@ -173,6 +247,8 @@ const authenticateToken = async (req, res, next) => {
 
 export {
   registerUser,
+  verifyOtp,
+  resendOtp,
   loginUser,
   refreshAccessToken,
   logout,

@@ -1,14 +1,18 @@
 import { getPool } from "../db/dbUtils.js";
 import {
   getUserByEmailId,
+  getUserByRegistrationNumber,
   registerUserModel,
   storeRefreshToken,
   getRefreshToken,
   updateRefreshToken,
 } from "./userAuthModels.js";
+import { getRedisClient } from "../db/redisUtils.js";
+import { sendOtpEmail } from "../utils/sendMail.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+
 
 dotenv.config();
 const pool = getPool();
@@ -60,28 +64,123 @@ async function registerUserService(
   password
 ) {
   const client = await pool.connect();
-  console.log("Database connection established.");
+  console.log("PostgreSQL Database connection established.");
 
-  const userExists = await getUserByEmailId(client, emailId);
-  if (userExists) {
-    console.log("User already exists with email ID:", emailId);
-    throw new Error(
-      "Invalid Registration. User with this email ID already exists"
-    );
+  try{
+
+    const emailExists = await getUserByEmailId(client, emailId);
+    if (emailExists) {
+      console.log("User already exists with email ID:", emailId);
+      throw new Error(
+        "Invalid Registration. User with this email ID already exists"
+      );
+    }
+
+    const regNoExists = await getUserByRegistrationNumber(client, registrationNumber);
+    if (regNoExists) {
+      console.log("User already exists with registration number:", registrationNumber);
+      throw new Error(
+        "Invalid Registration. User with this registration number already exists"
+      );
+    }
+
+  }
+  finally{
+    client.release();
+    console.log("Database client released after checking existing user.");
   }
 
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+  const redisClient = await getRedisClient();
+  
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
   console.log("Hashed password:", hashedPassword);
 
-  const user = await registerUserModel(
-    client,
+  const userData = {
     userName,
     emailId,
     registrationNumber,
-    hashedPassword
-  );
+    password: hashedPassword,
+  };
+
+  try {
+    await redisClient.set(`otp:${emailId}`, otp, { EX: 300 });
+    await redisClient.set(`pendingUser:${emailId}`, JSON.stringify(userData), {
+      EX: 300,
+    });
+  } catch (err) {
+    console.error("Redis error:", err);
+    throw new Error("Failed to store OTP or user data");
+  }
+  
+  const isOtpSent = await sendOtpEmail(emailId, otp);
+  if (isOtpSent) {
+    console.log("OTP sent successfully");
+    return true;
+  } else {
+    console.log("Failed to send OTP");
+    return false;
+  }
+}
+
+async function verifyOtpAndRegisterUserService(emailId, userEnteredOtp) {
+  const redisClient = await getRedisClient();
+  const storedOtp = await redisClient.get(`otp:${emailId}`);
+  if (storedOtp === null) {
+    throw new Error("Invalid or expired email");
+  }
+  if (storedOtp !== userEnteredOtp) {
+    throw new Error("Invalid or expired OTP");
+  }
+
+  const userJson = await redisClient.get(`pendingUser:${emailId}`);
+  if (!userJson) throw new Error("User data expired or missing");
+
+  const userData = JSON.parse(userJson);
+
+  const client = await pool.connect();
+  let user;
+  console.log("PostgreSQL Database connection established.");
+  try{
+    user = await registerUserModel(
+      client,
+      userData.userName,
+      userData.emailId,
+      userData.registrationNumber,
+      userData.password
+    );
+  }
+  finally{
+    client.release();
+    console.log("Database client released after user registration.");
+  }
+
+  await redisClient.del(`pendingUser:${emailId}`);
+  await redisClient.del(`otp:${emailId}`);
   return user;
+}
+
+async function resendOtpService(emailId) {
+  const redisClient = await getRedisClient();
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+  try {
+    await redisClient.set(`otp:${emailId}`, otp, { EX: 300 });
+  } catch (err) {
+    console.error("Redis error:", err);
+    throw new Error("Failed to store OTP");
+  }
+
+  const isOtpSent = await sendOtpEmail(emailId, otp);
+  if (isOtpSent) {
+    console.log("OTP resent successfully");
+    return true;
+  } else {
+    console.log("Failed to resend OTP");
+    return false;
+  }
 }
 
 async function loginUserService(emailId, password) {
@@ -223,6 +322,8 @@ async function authenticateTokenService(authHeader) {
 
 export {
   registerUserService,
+  verifyOtpAndRegisterUserService,
+  resendOtpService,
   loginUserService,
   refreshAccessTokenService,
   logoutUserService,
