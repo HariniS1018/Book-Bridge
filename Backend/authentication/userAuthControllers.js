@@ -4,6 +4,8 @@ import {
   verifyOtpAndRegisterUserService,
   resendOtpService,
   loginUserService,
+  forgotPasswordService,
+  verifyAndUpdatePasswordService,
   refreshAccessTokenService,
   logoutUserService,
 } from "./userAuthServices.js";
@@ -177,6 +179,46 @@ async function loginUser(req, res) {
   }
 }
 
+async function forgotPassword(req, res) {
+  const emailId = req.body.emailId;
+
+  if (emailId === undefined) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  try {
+    const isOtpSent = await forgotPasswordService(emailId);
+    if (isOtpSent) {
+      res.status(200).json({ message: "OTP sent successfully" });
+    } else {
+      res.status(500).json({ error: "Failed to send OTP" });
+    }
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error: " + error.message });
+  }
+}
+
+async function verifyAndUpdatePassword(req, res) {
+  const emailId = req.body.emailId;
+  const newPassword = req.body.newPassword;
+  const otp = req.body.otp;
+
+  if (emailId === undefined || newPassword === undefined || otp === undefined) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  try {
+    const user = await verifyAndUpdatePasswordService(emailId, newPassword, otp);
+    if (user) {
+      res.status(200).json({ message: "Password updated successfully", user });
+    } else {
+      res.status(500).json({ error: "Failed to update password" });
+    }
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error: " + error.message });
+  }
+}
+
 async function refreshAccessToken(req, res) {
   const bearerHeader = req.headers["authorization"];
   if (!bearerHeader || !bearerHeader.startsWith("Bearer ")) {
@@ -250,6 +292,8 @@ export {
   verifyOtp,
   resendOtp,
   loginUser,
+  forgotPassword,
+  verifyAndUpdatePassword,
   refreshAccessToken,
   logout,
   authenticateToken

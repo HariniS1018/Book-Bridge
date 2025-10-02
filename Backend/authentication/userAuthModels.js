@@ -54,6 +54,24 @@ async function registerUserModel(
   }
 }
 
+async function updatePasswordModel(client, emailId, hashedPassword) {
+  try {
+    const result = await client.query(
+      "UPDATE users SET password = $1 WHERE email_id = $2 RETURNING *",
+      [hashedPassword, emailId]
+    );
+    if (result.rows.length > 0) {
+      return result.rows[0];
+    } else {
+      console.log("[Models] No user found for the given email ID to update password.");
+      return null;
+    }
+  } catch (error) {
+    console.error("[Models] Error updating password:", error.message);
+    throw error;
+  }
+}
+
 async function storeRefreshToken(client, refreshToken, expiresAt, userId) {
     try {
         await client.query('INSERT INTO refresh_tokens (token, expires_at, user_id, is_valid) VALUES ($1, $2, $3, $4)', [refreshToken, expiresAt, userId, true]);
@@ -101,6 +119,7 @@ export {
   getUserByEmailId,
   getUserByRegistrationNumber,
   registerUserModel,
+  updatePasswordModel,
   storeRefreshToken,
   getRefreshToken,
   updateRefreshToken,

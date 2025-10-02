@@ -3,6 +3,7 @@ import {
   getUserByEmailId,
   getUserByRegistrationNumber,
   registerUserModel,
+  updatePasswordModel,
   storeRefreshToken,
   getRefreshToken,
   updateRefreshToken,
@@ -183,6 +184,65 @@ async function resendOtpService(emailId) {
   }
 }
 
+async function forgotPasswordService(emailId) {
+  const redisClient = await getRedisClient();
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+  try {
+    await redisClient.set(`otp:${emailId}`, otp, { EX: 300 });
+  } catch (err) {
+    console.error("Redis error:", err);
+    throw new Error("Failed to store OTP");
+  }
+
+  const isOtpSent = await sendOtpEmail(emailId, otp);
+  if (isOtpSent) {
+    console.log("OTP sent successfully");
+    return true;
+  } else {
+    console.log("Failed to send OTP");
+    return false;
+  }
+}
+
+async function verifyAndUpdatePasswordService(emailId, newPassword, userEnteredOtp) {
+  const redisClient = await getRedisClient();
+  const storedOtp = await redisClient.get(`otp:${emailId}`);
+  if (storedOtp === null) {
+    throw new Error("Invalid or expired email");
+  }
+  if (storedOtp !== userEnteredOtp) {
+    throw new Error("Invalid or expired OTP");
+  }
+
+  const client = await pool.connect();
+  let user;
+  console.log("PostgreSQL Database connection established.");
+  try{
+    user = await getUserByEmailId(client, emailId);
+    if (!user) {
+      throw new Error("User with this email ID does not exist");
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    console.log("Hashed new password:", hashedPassword);
+
+    user = await updatePasswordModel(
+      client,
+      emailId,
+      hashedPassword
+    );
+  }
+  finally{
+    client.release();
+    console.log("Database client released after updating password.");
+  }
+
+  await redisClient.del(`otp:${emailId}`);
+  return user;
+}
+
 async function loginUserService(emailId, password) {
   let accessToken, refreshToken, expiresAt;
   const client = await pool.connect();
@@ -325,6 +385,8 @@ export {
   verifyOtpAndRegisterUserService,
   resendOtpService,
   loginUserService,
+  forgotPasswordService,
+  verifyAndUpdatePasswordService,
   refreshAccessTokenService,
   logoutUserService,
   authenticateTokenService,
