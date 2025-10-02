@@ -1,3 +1,8 @@
 1. npm init -y
-2. npm install express dotenv pg
+2. npm install express dotenv pg redis
 3. npm start
+
+
+Docker commands:
+1. docker pull redis
+2. docker run -d --name redis-server -p 6379:6379 redis
