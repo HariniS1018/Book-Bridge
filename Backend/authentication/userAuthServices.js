@@ -64,12 +64,7 @@ async function registerUserService(
   registrationNumber,
   password
 ) {
-  const client = await pool.connect();
-  console.log("PostgreSQL Database connection established.");
-
-  try{
-
-    const emailExists = await getUserByEmailId(client, emailId);
+    const emailExists = await getUserByEmailId(emailId);
     if (emailExists) {
       console.log("User already exists with email ID:", emailId);
       throw new Error(
@@ -77,19 +72,13 @@ async function registerUserService(
       );
     }
 
-    const regNoExists = await getUserByRegistrationNumber(client, registrationNumber);
+    const regNoExists = await getUserByRegistrationNumber(registrationNumber);
     if (regNoExists) {
       console.log("User already exists with registration number:", registrationNumber);
       throw new Error(
         "Invalid Registration. User with this registration number already exists"
       );
     }
-
-  }
-  finally{
-    client.release();
-    console.log("Database client released after checking existing user.");
-  }
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -141,22 +130,13 @@ async function verifyOtpAndRegisterUserService(emailId, userEnteredOtp) {
 
   const userData = JSON.parse(userJson);
 
-  const client = await pool.connect();
   let user;
-  console.log("PostgreSQL Database connection established.");
-  try{
     user = await registerUserModel(
-      client,
       userData.userName,
       userData.emailId,
       userData.registrationNumber,
       userData.password
     );
-  }
-  finally{
-    client.release();
-    console.log("Database client released after user registration.");
-  }
 
   await redisClient.del(`pendingUser:${emailId}`);
   await redisClient.del(`otp:${emailId}`);
@@ -215,29 +195,20 @@ async function verifyAndUpdatePasswordService(emailId, newPassword, userEnteredO
     throw new Error("Invalid or expired OTP");
   }
 
-  const client = await pool.connect();
   let user;
-  console.log("PostgreSQL Database connection established.");
-  try{
-    user = await getUserByEmailId(client, emailId);
-    if (!user) {
-      throw new Error("User with this email ID does not exist");
-    }
-
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
-    console.log("Hashed new password:", hashedPassword);
-
-    user = await updatePasswordModel(
-      client,
-      emailId,
-      hashedPassword
-    );
+  user = await getUserByEmailId(emailId);
+  if (!user) {
+    throw new Error("User with this email ID does not exist");
   }
-  finally{
-    client.release();
-    console.log("Database client released after updating password.");
-  }
+
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(newPassword, salt);
+  console.log("Hashed new password:", hashedPassword);
+
+  user = await updatePasswordModel(
+    emailId,
+    hashedPassword
+  );
 
   await redisClient.del(`otp:${emailId}`);
   return user;
@@ -245,10 +216,8 @@ async function verifyAndUpdatePasswordService(emailId, newPassword, userEnteredO
 
 async function loginUserService(emailId, password) {
   let accessToken, refreshToken, expiresAt;
-  const client = await pool.connect();
-  console.log("Database connection established.");
-
-  const user = await getUserByEmailId(client, emailId);
+  
+  const user = await getUserByEmailId(emailId);
   if (!user) {
     throw new Error("Invalid credentials. User with this email ID is not found");
   }
@@ -267,7 +236,6 @@ async function loginUserService(emailId, password) {
     throw new Error("Error generating tokens. Please try again later.");
   }
   await storeRefreshToken(
-    client,
     refreshToken,
     expiresAt,
     user.user_id
@@ -277,16 +245,13 @@ async function loginUserService(emailId, password) {
 
 async function refreshAccessTokenService(BearerHeader) {
   let newAccessToken;
-  const client = await pool.connect();
-  console.log("Database connection established.");
-
+  
   const refreshToken = BearerHeader.split(" ")[1];
   if (!refreshToken) {
     throw new Error("Refresh token is required");
   }
 
   const storedRefreshToken = await getRefreshToken(
-    client,
     refreshToken
   );
 
@@ -314,42 +279,28 @@ async function refreshAccessTokenService(BearerHeader) {
 }
 
 async function logoutUserService(BearerHeader) {
-  let client;
+  const refreshToken = BearerHeader.split(" ")[1];
+  if (!refreshToken) {
+    throw new Error("Refresh token is required");
+  }
+
   try {
-    client = await pool.connect();
-    console.log("Database connection established.");
+    jwt.verify(refreshToken, REFRESH_TOKEN_SECRET);
+  } catch (jwtError) {
+    throw new Error("Invalid refresh token");
+  }
 
-    const refreshToken = BearerHeader.split(" ")[1];
-    if (!refreshToken) {
-      throw new Error("Refresh token is required");
-    }
-
-    try {
-      jwt.verify(refreshToken, REFRESH_TOKEN_SECRET);
-    } catch (jwtError) {
-      throw new Error("Invalid refresh token");
-    }
-
-    const isvalid = await getRefreshToken(client, refreshToken);
-    if (isvalid){
-      const result = await updateRefreshToken(client, refreshToken);
-      if (result === null) {
-        throw new Error("Refresh token not found");
-      }
-    }
-    else{
-      throw new Error("Refresh token is already invalidated or logged out.");
-    }
-    
-  } catch (error) {
-    console.error("[Services] Error in logoutUser:", error.message);
-    throw error;
-  } finally {
-    if (client) {
-      client.release();
-      console.log("Database client released after logout.");
+  const isvalid = await getRefreshToken(refreshToken);
+  if (isvalid){
+    const result = await updateRefreshToken(refreshToken);
+    if (result === null) {
+      throw new Error("Refresh token not found");
     }
   }
+  else{
+    throw new Error("Refresh token is already invalidated or logged out.");
+  }
+  
 }
 
 const jwtVerifyPromise = (token, secret) => {
