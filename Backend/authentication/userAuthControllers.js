@@ -58,9 +58,6 @@ async function registerUser(req, res) {
       res.status(500).json({ error: "Registration failed. Please try again." });
     }
   } catch (error) {
-    if (error.message.includes("Invalid Email id")) {
-      return res.status(400).json({ error: error.message });
-    }
     res.status(500).json({ error: "Registration failed. Internal server error: " + error.message });
   }
 }
@@ -75,14 +72,9 @@ async function verifyOtp(req, res) {
   ) {
     return res.status(400).json({ error: "Missing required fields" });
   }
-  if (typeof otp !== "string" || otp.trim().length !== 6) {
+  if (typeof otp !== "string" || (otp).trim().length !== 6 || !/^\d{6}$/.test(otp)) {
     return res.status(400).json({
       error: "Invalid OTP. OTP must be a 6-digit number.",
-    });
-  }
-  if (!/^\d{6}$/.test(otp)) {
-    return res.status(400).json({
-      error: "Invalid OTP format. OTP must be a 6-digit number.",
     });
   }
   if (!/^\S+@\S+\.\S+$/.test(emailId)) {
@@ -102,7 +94,7 @@ async function verifyOtp(req, res) {
       res.status(500).json({ error: "Registration failed. Please try again." });
     }
   } catch (error) {
-    if (error.message.includes("Invalid or expired OTP")) {
+    if (error.message.includes("Invalid or expired")) {
       return res.status(400).json({ error: error.message });
     }
     res
@@ -118,6 +110,11 @@ async function resendOtp(req, res) {
 
   if (emailId === undefined) {
     return res.status(400).json({ error: "Missing required fields" });
+  }
+  if (!/^\S+@\S+\.\S+$/.test(emailId)) {
+    return res.status(400).json({
+      error: "Invalid email format.",
+    });
   }
 
   try {
@@ -166,8 +163,19 @@ async function loginUser(req, res) {
       refreshToken,
       user: user,
     } = await loginUserService(emailId, password);
-    console.log("Login user var:", user);
-    res.json({ message: "Login successful", accessToken, refreshToken, user });
+    if(accessToken && refreshToken && user){
+      console.log("Login user var:", user);
+      res.json({
+        message: "Login successful",
+        accessToken,
+        refreshToken,
+        user,
+      });
+    }
+    else{
+      return res.status(401).json({ error: "Login failed. Please check your credentials." });
+    }
+    
   } catch (error) {
     if (error.message.includes("Invalid credentials")) {
       return res.status(401).json({ error: error.message });
@@ -184,6 +192,12 @@ async function forgotPassword(req, res) {
 
   if (emailId === undefined) {
     return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  if (!/^\S+@\S+\.\S+$/.test(emailId)) {
+    return res.status(400).json({
+      error: "Invalid email format." + error.message,
+    });
   }
 
   try {
@@ -215,6 +229,9 @@ async function verifyAndUpdatePassword(req, res) {
       res.status(500).json({ error: "Failed to update password" });
     }
   } catch (error) {
+    if (error.message.includes("Invalid or expired")) {
+      return res.status(400).json({ error: error.message });
+    }
     res.status(500).json({ error: "Internal server error: " + error.message });
   }
 }
@@ -253,16 +270,17 @@ async function logout(req, res) {
   }
 
   try {
-    await logoutUserService(bearerHeader);
-    res.json({ message: "Logged out successfully" });
-  } catch (error) {
-    if (error.message === "Refresh token is required") {
-      return res.status(400).json({ error: error.message });
+    const isLoggedOut = await logoutUserService(bearerHeader);
+    if (isLoggedOut) {
+      res.status(200).json({ message: "Logged out successfully" });
+    } else {
+      res.status(500).json({ error: "Failed to log out" });
     }
+  } catch (error) {
     if (error.message === "Refresh token not found") {
       return res.status(400).json({ error: error.message });
     }
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal Server Error " + error });
   }
 }
 

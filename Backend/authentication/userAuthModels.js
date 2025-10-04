@@ -1,8 +1,10 @@
 import User from "../models/user.js";
+import RefreshToken from "../models/refreshToken.js";
 
 async function getUserByEmailId(emailId) {
   try {
     const user = await User.findOne({ where: { email_id: emailId } });
+    console.log("[Models] User details:", user);
     if (!user) {
       console.log("[Models] No user found for the given email ID.");
       return null;
@@ -14,12 +16,12 @@ async function getUserByEmailId(emailId) {
   }
 }
 
-
 async function getUserByRegistrationNumber(registrationNumber) {
   try {
     const user = await User.findOne({
       where: { registration_number: registrationNumber },
     });
+    console.log("[Models] User details:", user);
     if (!user) {
       console.log("[Models] No user found for the given registration number.");
       return null;
@@ -38,42 +40,22 @@ async function registerUserModel(
   userName,
   emailId,
   registrationNumber,
-  hashedPassword
+  password
 ) {
   try {
     const user = await User.create({
       user_name: userName,
       email_id: emailId,
       registration_number: registrationNumber,
-      password: hashedPassword,
+      password: password,
     });
+    console.log("[Models] New user registered:", user);
     return user;
   } catch (error) {
     console.error("[Models] Error registering user:", error.message);
     throw error;
   }
 }
-
-async function updatePasswordModel(emailId, hashedPassword) {
-  try {
-    const [updatedCount, updatedUsers] = await User.update(
-      { password: hashedPassword },
-      { where: { email_id: emailId }, returning: true }
-    );
-    if (updatedCount === 0) {
-      console.log(
-        "[Models] No user found for the given email ID to update password."
-      );
-      return null;
-    }
-    return updatedUsers[0];
-  } catch (error) {
-    console.error("[Models] Error updating password:", error.message);
-    throw error;
-  }
-}
-
-import RefreshToken from "../models/refreshToken.js";
 
 async function storeRefreshToken(refreshToken, expiresAt, userId) {
   try {
@@ -90,6 +72,28 @@ async function storeRefreshToken(refreshToken, expiresAt, userId) {
   }
 }
 
+async function updatePasswordModel(emailId, password) {
+  try {
+    const [updatedCount, updatedUsers] = await User.update(
+      { password: password },
+      { where: { email_id: emailId }, returning: true }
+    );
+    console.log("[Models] Number of users updated:", updatedCount);
+    console.log("[Models] Updated user details:", updatedUsers);
+    if (updatedCount === 0) {
+      console.log(
+        "[Models] No user found for the given email ID to update password."
+      );
+      return null;
+    }
+    return updatedUsers[0];
+  } catch (error) {
+    console.error("[Models] Error updating password:", error.message);
+    throw error;
+  }
+}
+
+
 async function getRefreshToken(token) {
   try {
     const result = await RefreshToken.findOne({
@@ -99,6 +103,7 @@ async function getRefreshToken(token) {
         attributes: ["email_id", "user_name"],
       },
     });
+    console.log("[Models] Refresh token details:", result);
     if (!result) {
       console.log("[Models] The given refresh token not found.");
       return null;

@@ -70,6 +70,7 @@ async function registerUserService(
       );
     }
 
+    
     const regNoExists = await getUserByRegistrationNumber(registrationNumber);
     if (regNoExists) {
       console.log("User already exists with registration number:", registrationNumber);
@@ -84,8 +85,7 @@ async function registerUserService(
   
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
-  console.log("Hashed password:", hashedPassword);
-
+  
   const userData = {
     userName,
     emailId,
@@ -99,8 +99,8 @@ async function registerUserService(
       EX: 300,
     });
   } catch (err) {
-    console.error("Redis error:", err);
-    throw new Error("Failed to store OTP or user data");
+    console.error("Redis error. Cannot store OTP or user data:", err);
+    throw new Error("Failed to store OTP or user data in Redis");
   }
   
   const isOtpSent = await sendOtpEmail(emailId, otp);
@@ -128,13 +128,12 @@ async function verifyOtpAndRegisterUserService(emailId, userEnteredOtp) {
 
   const userData = JSON.parse(userJson);
 
-  let user;
-    user = await registerUserModel(
-      userData.userName,
-      userData.emailId,
-      userData.registrationNumber,
-      userData.password
-    );
+  const user = await registerUserModel(
+    userData.userName,
+    userData.emailId,
+    userData.registrationNumber,
+    userData.password
+  );
 
   await redisClient.del(`pendingUser:${emailId}`);
   await redisClient.del(`otp:${emailId}`);
@@ -157,59 +156,9 @@ async function resendOtpService(emailId) {
     console.log("OTP resent successfully");
     return true;
   } else {
-    console.log("Failed to resend OTP");
+    console.error("Failed to resend OTP");
     return false;
   }
-}
-
-async function forgotPasswordService(emailId) {
-  const redisClient = await getRedisClient();
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-  try {
-    await redisClient.set(`otp:${emailId}`, otp, { EX: 300 });
-  } catch (err) {
-    console.error("Redis error:", err);
-    throw new Error("Failed to store OTP");
-  }
-
-  const isOtpSent = await sendOtpEmail(emailId, otp);
-  if (isOtpSent) {
-    console.log("OTP sent successfully");
-    return true;
-  } else {
-    console.log("Failed to send OTP");
-    return false;
-  }
-}
-
-async function verifyAndUpdatePasswordService(emailId, newPassword, userEnteredOtp) {
-  const redisClient = await getRedisClient();
-  const storedOtp = await redisClient.get(`otp:${emailId}`);
-  if (storedOtp === null) {
-    throw new Error("Invalid or expired email");
-  }
-  if (storedOtp !== userEnteredOtp) {
-    throw new Error("Invalid or expired OTP");
-  }
-
-  let user;
-  user = await getUserByEmailId(emailId);
-  if (!user) {
-    throw new Error("User with this email ID does not exist");
-  }
-
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(newPassword, salt);
-  console.log("Hashed new password:", hashedPassword);
-
-  user = await updatePasswordModel(
-    emailId,
-    hashedPassword
-  );
-
-  await redisClient.del(`otp:${emailId}`);
-  return user;
 }
 
 async function loginUserService(emailId, password) {
@@ -233,16 +182,73 @@ async function loginUserService(emailId, password) {
     console.error("Error generating tokens:", error.message);
     throw new Error("Error generating tokens. Please try again later.");
   }
-  await storeRefreshToken(
+  const isStored = await storeRefreshToken(
     refreshToken,
     expiresAt,
     user.user_id
   );
-  return { accessToken, refreshToken, user };
+  if(isStored){
+    return { accessToken, refreshToken, user };
+  }
+  else{
+    return { accessToken: null, refreshToken: null, user: null }; // confirm on this
+  }
+}
+
+async function forgotPasswordService(emailId) {
+  const redisClient = await getRedisClient();
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+  try {
+    await redisClient.set(`otp:${emailId}`, otp, { EX: 300 });
+  } catch (err) {
+    console.error("Redis error:", err);
+    throw new Error("Failed to store OTP");
+  }
+
+  const isOtpSent = await sendOtpEmail(emailId, otp);
+  if (isOtpSent) {
+    console.log("OTP sent successfully");
+    return true;
+  } else {
+    console.error("Failed to send OTP");
+    return false;
+  }
+}
+
+async function verifyAndUpdatePasswordService(
+  emailId,
+  newPassword,
+  userEnteredOtp
+) {
+  const redisClient = await getRedisClient();
+  const storedOtp = await redisClient.get(`otp:${emailId}`);
+  if (storedOtp === null) {
+    throw new Error("Invalid or expired email");
+  }
+  if (storedOtp !== userEnteredOtp) {
+    throw new Error("Invalid or expired OTP");
+  }
+
+  const isUser = await getUserByEmailId(emailId);
+  if (!isUser) {
+    throw new Error("User with this email ID does not exist");
+  }
+
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(newPassword, salt);
+  
+  const user = await updatePasswordModel(emailId, hashedPassword);
+  if (!user) {
+    console.error("No user for the given email ID to update password.");
+    throw new Error("Invalid Email ID. Cannot update Password.");
+  }
+
+  await redisClient.del(`otp:${emailId}`);
+  return user;
 }
 
 async function refreshAccessTokenService(BearerHeader) {
-  let newAccessToken;
   
   const refreshToken = BearerHeader.split(" ")[1];
   if (!refreshToken) {
@@ -267,6 +273,7 @@ async function refreshAccessTokenService(BearerHeader) {
   const user = {
     user_id: storedRefreshToken.user_id,
   };
+  let newAccessToken;
   try {
     newAccessToken = generateAccessToken(user);
   } catch (error) {
@@ -298,7 +305,7 @@ async function logoutUserService(BearerHeader) {
   else{
     throw new Error("Refresh token is already invalidated or logged out.");
   }
-  
+  return true;
 }
 
 const jwtVerifyPromise = (token, secret) => {
@@ -322,7 +329,6 @@ async function authenticateTokenService(authHeader) {
 
   try {
     const decoded = await jwtVerifyPromise(token, ACCESS_TOKEN_SECRET);
-    console.log("decoded: ", decoded);
     return decoded;
   } catch (err) {
     throw new Error("Invalid or expired access token");
