@@ -1,4 +1,3 @@
-import { getPool } from "../db/dbUtils.js";
 import {
   getUserByEmailId,
   getUserByRegistrationNumber,
@@ -16,7 +15,6 @@ import dotenv from "dotenv";
 
 
 dotenv.config();
-const pool = getPool();
 
 const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET_KEY;
 const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET_KEY;
