@@ -35,36 +35,6 @@ function setupSigintHandler(pool, transactionInProgress) {
     });
 }
 
-async function beginTransaction(client) {
-    try {
-        await client.query("BEGIN");
-        console.log("Transaction started.");
-    } catch (error) {
-        console.log("BeginTransactionFailedError", error.message);
-        throw new Error('BeginTransactionFailedError' + error.message);
-    }
-}
-
-async function commitTransaction(client) {
-    try {
-        await client.query("COMMIT");
-        console.log("Transaction committed.");
-    } catch (error) {
-        console.log("CommitTransactionFailedError", error.message);
-        throw new Error('CommitTransactionFailedError' + error.message);
-    }
-}
-
-async function rollbackTransaction(client) {
-    try {
-        await client.query("ROLLBACK");
-        console.log("Transaction rolled back.");
-    } catch (error) {
-        console.log("RollbackFailedError", error.message);
-        throw new Error('RollbackFailedError' + error.message);
-    }
-}
-
 async function closePool() {
   if (poolInstance) {
     console.log('Attempting to close PostgreSQL pool...');
@@ -82,7 +52,4 @@ export {
     getPool,
     closePool,
     setupSigintHandler,
-    beginTransaction,
-    commitTransaction,
-    rollbackTransaction,
 };

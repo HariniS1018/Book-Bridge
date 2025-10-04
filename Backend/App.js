@@ -17,12 +17,14 @@ app.use(
   })
 );
 
-import dbRoutes from "./db/createTableRoutes.js";
-app.use("/db", dbRoutes);
+// import dbRoutes from "./db/createTableRoutes.js";
+// app.use("/db", dbRoutes);
 
 import { userAuthRoutes } from "./authentication/userAuthRoutes.js";
 app.use("/userAuth", userAuthRoutes);
-console.log("UserAuth routes mounted at /userAuth");
+
+import { booksRoutes } from "./routers/booksRoutes.js";
+app.use("/books", booksRoutes);
 
 app.use(notFoundHandler); // Catch-all 404
 app.use(errorHandler); // Global error handler
