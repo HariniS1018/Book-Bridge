@@ -1,4 +1,4 @@
-import Book from "../models/book.js";
+import Book from "./book.js";
 
 async function getAllBooksModels(transaction) {
   try {

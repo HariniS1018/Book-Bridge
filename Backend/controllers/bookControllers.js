@@ -1,4 +1,4 @@
-import { getAllBooksServices } from "../services/booksServices.js";
+import { getAllBooksServices } from "../services/bookServices.js";
 
 async function getAllBooks(req, res, next) {
   try {

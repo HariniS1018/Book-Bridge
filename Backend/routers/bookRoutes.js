@@ -6,7 +6,7 @@ import {
   getAllBooks,
   //   fetchBookDetails,
   //   addBook
-} from "../controllers/booksControllers.js";
+} from "../controllers/bookControllers.js";
 
 booksRoutes.get("/getAllBooks", authenticateToken, getAllBooks);
 // booksRoutes.get("/fetchBookDetails/:id", authenticateToken, fetchBookDetails);
