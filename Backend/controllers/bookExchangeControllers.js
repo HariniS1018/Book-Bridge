@@ -1,6 +1,7 @@
 import {
   createBookRequestService,
   fetchListOfRequestedBooksByUserIdService,
+  updateBookRequestStatusByLenderService,
 } from "../services/bookExchangeServices.js";
 
 
@@ -27,7 +28,32 @@ async function fetchListOfRequestedBooks(req, res, next) {
     } catch (error) {
       next(error);
     }
-    
 }
 
-export { createBookRequest, fetchListOfRequestedBooks };
+
+async function updateBookRequestStatus(req, res, next) {
+    try {
+        const lenderId = req.user.userId;
+        const borrowerId = req.body.borrowerId;
+        const bookId = req.body.bookId;
+        const newStatus = req.body.newStatus;
+
+        const validStatuses = ["Accepted", "Rejected", "Returned"];
+        if (!validStatuses.includes(newStatus)) {
+          throw new Error(
+            "Invalid status. Valid statuses are: " + validStatuses.join(", ")
+          );
+        }
+        
+        const updatedRowsCount = await updateBookRequestStatusByLenderService(lenderId, borrowerId, bookId, newStatus);
+        res.status(200).json({ updatedRowsCount });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export {
+  createBookRequest,
+  fetchListOfRequestedBooks,
+  updateBookRequestStatus,
+};

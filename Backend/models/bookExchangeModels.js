@@ -151,10 +151,71 @@ async function fetchListOfRequestedBooksByUserId(
   }));
 }
 
+async function getRequestStatusByLender(lenderId, borrowerId, bookId, transaction) {
+  try {
+    const exchange = await BookExchange.findOne(
+      {
+        where: {
+          lender_id: lenderId,
+          borrower_id: borrowerId,
+          book_id: bookId,
+        },
+      },
+      transaction
+    );
+    if (!exchange) {
+      return null;
+    }
+    return exchange.status;
+  } catch (error) {
+    console.log(
+      "Sequelize error while fetching book request status: ",
+      error.message
+    );
+    throw error;
+  }
+}
+
+async function updateBookRequestStatusByLender(
+  lenderId,
+  borrowerId,
+  bookId,
+  newStatus,
+  transaction
+) {
+  try {
+    const [updatedRowsCount] = await BookExchange.update(
+      { status: newStatus },
+      {
+        where: {
+          borrower_id: borrowerId,
+          lender_id: lenderId,
+          book_id: bookId,
+        },
+        transaction,
+      }
+    );
+    console.log("[MODELS] UPDATED_ROWS_COUNT: ", updatedRowsCount);
+    if (updatedRowsCount === 0) {
+      throw new Error("No matching book exchange record found to update.");
+    }
+    return updatedRowsCount;
+  } catch (error) {
+    console.log(
+      "Sequelize error while updating book request status: ",
+      error.message
+    );
+    throw error;
+  }
+}
+
+
 export {
   checkBookAvailability,
   checkAlreadyBookBorrowedByUserId,
   isBookOwnedByBorrower,
   createBookRequest,
   fetchListOfRequestedBooksByUserId,
+  updateBookRequestStatusByLender,
+  getRequestStatusByLender,
 };

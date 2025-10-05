@@ -4,6 +4,8 @@ import {
   checkBookAvailability,
   isBookOwnedByBorrower,
   fetchListOfRequestedBooksByUserId,
+  updateBookRequestStatusByLender,
+  getRequestStatusByLender,
 } from "../models/bookExchangeModels.js";
 import { withTransaction } from "../db/transactionHandler.js";
 
@@ -53,4 +55,32 @@ async function fetchListOfRequestedBooksByUserIdService(userId, uptoDate) {
   });
 }
 
-export { createBookRequestService, fetchListOfRequestedBooksByUserIdService };
+async function updateBookRequestStatusByLenderService(lenderId, borrowerId, bookId, newStatus) {
+  return withTransaction(async (transaction) => {
+    console.log("[SERVICES] STATUS: ", newStatus);
+    const currentStatus = await getRequestStatusByLender(lenderId, borrowerId, bookId, transaction);
+    if (currentStatus === null) {
+      throw new Error("No matching book exchange record found.");
+    }
+    else if (currentStatus === "Pending" && (newStatus !== "Accepted" && newStatus !== "Rejected")) {
+      throw new Error("Pending requests can be marked either as accepted or rejected.");
+    }
+    else if (currentStatus === "Accepted" && newStatus !== "Returned") {
+      throw new Error("Accepted requests can only be marked as returned.");
+    }
+    else if (currentStatus === "Rejected" || currentStatus === "Returned") {
+      throw new Error(`Requests with status '${currentStatus}' cannot be updated further.`);
+    }
+    else if (currentStatus === newStatus) {
+      throw new Error(`The request is already marked as '${newStatus}'.`);
+    }
+    else if (currentStatus === "Overdue" && newStatus !== "Returned") {
+      throw new Error("Can change status from 'Overdue' only to 'Returned'.");
+    }
+    
+    const updatedRowsCount = await updateBookRequestStatusByLender(lenderId, borrowerId, bookId, newStatus, transaction);
+    return updatedRowsCount;
+  });
+}
+
+export { createBookRequestService, fetchListOfRequestedBooksByUserIdService, updateBookRequestStatusByLenderService };
