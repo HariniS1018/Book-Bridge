@@ -1,0 +1,5 @@
+1. Login - If the user has already logged in, then he should not login again?
+2. If a user already logged out by a refresh token, then he cannot log out from the same refresh token (may be from same device it can mean)?
+3. Need refresh Token to log out. Don't need accessToken to log out.
+4. refresh token is to know whether the user has logged in. And the access token is to know whether the user has access to the particular features or pages.
+5. 
