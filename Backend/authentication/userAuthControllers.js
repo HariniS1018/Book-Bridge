@@ -284,26 +284,6 @@ async function logout(req, res) {
   }
 }
 
-const authenticateToken = async (req, res, next) => {
-  const bearerHeader = req.headers["authorization"];
-  if (!bearerHeader || !bearerHeader.startsWith("Bearer ")) {
-    return res
-      .status(401)
-      .json({ error: "Authorization header is missing or invalid" });
-  }
-
-  try {
-    const user = await authenticateToken(bearerHeader);
-    console.log("Authenticated user:", user);
-    req.user = user;
-    next();
-  } catch (error) {
-    if (error.message === "Authorization header is missing or invalid") {
-      return res.status(401).json({ error: error.message });
-    }
-    return res.status(403).json({ error: error.message });
-  }
-};
 
 export {
   registerUser,
@@ -313,6 +293,5 @@ export {
   forgotPassword,
   verifyAndUpdatePassword,
   refreshAccessToken,
-  logout,
-  authenticateToken
+  logout
 };
