@@ -35,7 +35,8 @@ async function addBook(req, res, next) {
     const authorName = req.body.authorName;
     const isbn = req.body.isbn || null;
     const publishedYear = req.body.publishedYear || null;
-    const addedBook = await addBookService(bookName, authorName, isbn, publishedYear);
+    const userId = req.user.userId; 
+    const addedBook = await addBookService(bookName, authorName, isbn, publishedYear, userId);
     res.status(201).json(addedBook);
   } catch (error) {
     next(error);

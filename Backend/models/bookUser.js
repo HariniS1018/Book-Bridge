@@ -3,18 +3,14 @@ import { sequelize } from "../db/sequelize.js";
 import Book from "./book.js";
 import User from "./user.js";
 
+
 const BookUser = sequelize.define(
   "BookUser",
   {
-    id: {
-      type: DataTypes.INTEGER,
-      autoIncrement: true,
-      primaryKey: true,
-      allowNull: false,
-    },
     book_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
+      primaryKey: true,
       references: {
         model: Book,
         key: "book_id",
@@ -25,6 +21,7 @@ const BookUser = sequelize.define(
     owner_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
+      primaryKey: true,
       references: {
         model: User,
         key: "user_id",
@@ -32,10 +29,26 @@ const BookUser = sequelize.define(
       onUpdate: "NO ACTION",
       onDelete: "CASCADE",
     },
+    count: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1,
+      validate: {
+        min: 1,
+      },
+    },
+    available_count: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1,
+      validate: {
+        min: 0,
+      },
+    },
     availability_status: {
       type: DataTypes.ENUM("Available", "Lent", "Lost"),
-      defaultValue: "Available",
       allowNull: false,
+      defaultValue: "Available",
     },
   },
   {
@@ -45,8 +58,18 @@ const BookUser = sequelize.define(
   }
 );
 
+
 // Relations
-User.belongsToMany(Book, { through: BookUser, foreignKey: "owner_id" });
-Book.belongsToMany(User, { through: BookUser, foreignKey: "book_id" });
+User.belongsToMany(Book, {
+  through: BookUser,
+  foreignKey: "owner_id",
+  otherKey: "book_id",
+});
+
+Book.belongsToMany(User, {
+  through: BookUser,
+  foreignKey: "book_id",
+  otherKey: "owner_id",
+});
 
 export default BookUser;
