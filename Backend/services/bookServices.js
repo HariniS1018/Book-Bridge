@@ -7,6 +7,7 @@ import {
   getBookByBookDetails,
   CheckLinkedBookToUser,
   updateBookCount,
+  updateBookModel,
 } from "../models/bookModels.js";
 
 async function getAllBooksService() {
@@ -78,4 +79,24 @@ async function addBookService(bookName, authorName, isbn, publishedYear, userId)
   });
 }
 
-export { getAllBooksService, getBookByBookIdService, addBookService };
+async function updateBookService(bookId, isbn, publishedYear, userId) {
+  return withTransaction(async (transaction) => {
+    const book = await getBookByBookId(bookId, transaction);
+    if (!book) {
+      throw new Error("Book not found");
+    }
+    const isUserBookLinked = await CheckLinkedBookToUser(bookId, userId, transaction);
+    if (!isUserBookLinked) {
+      throw new Error("User does not own this book. So cannot update this book.");
+    }
+    const updatedBook = await updateBookModel(
+      bookId,
+      isbn,
+      publishedYear,
+      transaction
+    );
+    return updatedBook;
+  });
+}
+
+export { getAllBooksService, getBookByBookIdService, addBookService, updateBookService };

@@ -1,7 +1,8 @@
 import {
   getAllBooksService,
   getBookByBookIdService,
-  addBookService
+  addBookService,
+  updateBookService,
 } from "../services/bookServices.js";
 
 async function getAllBooks(req, res, next) {
@@ -43,4 +44,17 @@ async function addBook(req, res, next) {
   }
 }
 
-export { getAllBooks, fetchBookDetails, addBook };
+async function updateBook(req, res, next) {
+  try {
+    const bookId = req.body.bookId;
+    const isbn = req.body.isbn || null;
+    const publishedYear = req.body.publishedYear || null;
+    const userId = req.user.userId; 
+    const updatedBook = await updateBookService(bookId, isbn, publishedYear, userId);
+    res.status(200).json(updatedBook);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export { getAllBooks, fetchBookDetails, addBook, updateBook };

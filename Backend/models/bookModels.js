@@ -104,6 +104,9 @@ async function CheckLinkedBookToUser(bookId, userId, transaction) {
       where: { book_id: bookId, owner_id: userId },
       transaction
     });
+    if(!link){
+      return null;
+    }
     return link;
   } catch (error) {
     console.error("Sequelize error while checking linked book to user:", error.message);
@@ -136,13 +139,32 @@ async function linkBookToUser(bookId, userId, count=1, availableCount=1, transac
   }
 }
 
+async function updateBookModel(bookId, isbn, publishedYear, transaction){
+  try {
+    const [updatedRowsCount, updatedRows] = await Book.update(
+      { 
+        ...(isbn !== null && { isbn: isbn }),
+        ...(publishedYear !== null && { publication_year: publishedYear })
+      },
+      { where: { book_id: bookId }, returning: true, transaction }
+    );
+    if (updatedRowsCount === 0) {
+      throw new Error("Book update failed");
+    }
+    return updatedRows[0];
+  } catch (error) {
+    console.error("Sequelize error while updating book:", error.message);
+    throw error;
+  }
+}
 
 export {
   getAllBooks,
   getBookByBookId,
   createBook,
-  getBookByBookDetails, 
+  getBookByBookDetails,
   CheckLinkedBookToUser,
   updateBookCount,
   linkBookToUser,
+  updateBookModel,
 };
