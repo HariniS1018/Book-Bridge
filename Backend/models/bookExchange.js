@@ -6,29 +6,25 @@ import Book from "./book.js";
 const BookExchange = sequelize.define(
   "BookExchange",
   {
-    exchange_id: {
-      type: DataTypes.INTEGER,
-      autoIncrement: true,
-      primaryKey: true,
-      allowNull: false,
-    },
     borrower_id: {
       type: DataTypes.INTEGER,
-      allowNull: false,
-    },
-    lender_id: {
-      type: DataTypes.INTEGER,
+      primaryKey: true,
       allowNull: false,
     },
     book_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
+      primaryKey: true,
       references: {
         model: Book,
         key: "book_id",
       },
       onUpdate: "NO ACTION",
       onDelete: "CASCADE",
+    },
+    lender_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
     },
     status: {
       type: DataTypes.ENUM(
@@ -59,8 +55,14 @@ const BookExchange = sequelize.define(
     tableName: "books_exchanged",
     timestamps: true,
     underscored: true,
-  }
-);
+    validate: {
+      preventSelfLending() {
+        if (this.lender_id === this.borrower_id) {
+          throw new Error("The borrower_id and lender_id must be different. A user cannot borrow a book from themselves.");
+        }
+      },
+    },
+});
 
 
 // Relations
