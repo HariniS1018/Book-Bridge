@@ -23,6 +23,10 @@ app.use("/userAuth", userAuthRoutes);
 import { booksRoutes } from "./routers/bookRoutes.js";
 app.use("/books", booksRoutes);
 
+import { userRoutes } from "./routers/userRoutes.js";
+app.use("/user",userRoutes )
+
+
 app.use(notFoundHandler); // Catch-all 404
 app.use(errorHandler); // Global error handler
 

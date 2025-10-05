@@ -24,6 +24,7 @@ sequelize
 });
 sequelize.models = models;
 
+
 // Graceful shutdown handlers
 process.on("SIGINT", () => {
   console.log("SIGINT signal received. Shutting down gracefully...");

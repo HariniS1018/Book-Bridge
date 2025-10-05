@@ -12,6 +12,7 @@ function getPool() {
           database: process.env.POSTGRESQL_DB_NAME,
           password: process.env.POSTGRESQL_DB_PASSWORD,
           port: process.env.POSTGRESQL_DB_PORT,
+          ssl: false,
         });
     }
     return poolInstance;
