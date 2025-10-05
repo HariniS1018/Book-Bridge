@@ -3,6 +3,7 @@ import {
   createBookRequest,
   checkBookAvailability,
   isBookOwnedByBorrower,
+  fetchListOfRequestedBooksByUserId,
 } from "../models/bookExchangeModels.js";
 import { withTransaction } from "../db/transactionHandler.js";
 
@@ -38,4 +39,18 @@ async function createBookRequestService(borrowerId, lenderId, bookId) {
     });
 }
 
-export {createBookRequestService};
+async function fetchListOfRequestedBooksByUserIdService(userId, uptoDate) {
+  return withTransaction(async (transaction) => {
+    const requestedBooks = await fetchListOfRequestedBooksByUserId(
+      userId,
+      uptoDate,
+      transaction
+    );
+    if (!requestedBooks) {
+      throw new Error("Error while fetching requested books.");
+    }
+    return requestedBooks;
+  });
+}
+
+export { createBookRequestService, fetchListOfRequestedBooksByUserIdService };

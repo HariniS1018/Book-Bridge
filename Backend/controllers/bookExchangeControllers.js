@@ -1,4 +1,7 @@
-import { createBookRequestService } from "../services/bookExchangeServices.js";
+import {
+  createBookRequestService,
+  fetchListOfRequestedBooksByUserIdService,
+} from "../services/bookExchangeServices.js";
 
 
 async function createBookRequest(req, res, next) {
@@ -14,4 +17,17 @@ async function createBookRequest(req, res, next) {
     }
 }
 
-export { createBookRequest };
+
+async function fetchListOfRequestedBooks(req, res, next) {
+    try {
+        const userId = req.user.userId;
+        const today = new Date();
+        const requestedBooks = await fetchListOfRequestedBooksByUserIdService(userId, today);
+        res.status(200).json(requestedBooks);
+    } catch (error) {
+      next(error);
+    }
+    
+}
+
+export { createBookRequest, fetchListOfRequestedBooks };

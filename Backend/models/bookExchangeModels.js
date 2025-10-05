@@ -1,6 +1,9 @@
-import { where } from "sequelize";
+import { Op } from "sequelize";
+
 import BookExchange from "./bookExchange.js";
 import BookUser from "./bookUser.js";
+import Book from "./book.js";
+import User from "./user.js";
 
 async function checkAlreadyBookBorrowedByUserId(
   borrowerId,
@@ -18,8 +21,8 @@ async function checkAlreadyBookBorrowedByUserId(
       transaction
     );
     console.log("[MODELS] IS_BORROWED: ", isBorrowed);
-    if(!isBorrowed){
-        return null;
+    if (!isBorrowed) {
+      return null;
     }
     return isBorrowed;
   } catch (error) {
@@ -32,26 +35,27 @@ async function checkAlreadyBookBorrowedByUserId(
 }
 
 async function checkBookAvailability(bookId, lenderId, transaction) {
-    try {
-        const isAvailable = await BookUser.findOne(
-            {
-                where: {
-                    book_id: bookId,
-                    owner_id: lenderId
-                }
-            }, transaction
-        );
-        if(!isAvailable){
-            throw new Error("Error while checking book availability.");
-        }
-        return isAvailable;
-    } catch (error) {
-      console.log(
-        "Sequelize error while checking book availability: ",
-        error.message
-      );
-      throw error;
+  try {
+    const isAvailable = await BookUser.findOne(
+      {
+        where: {
+          book_id: bookId,
+          owner_id: lenderId,
+        },
+      },
+      transaction
+    );
+    if (!isAvailable) {
+      throw new Error("Error while checking book availability.");
     }
+    return isAvailable;
+  } catch (error) {
+    console.log(
+      "Sequelize error while checking book availability: ",
+      error.message
+    );
+    throw error;
+  }
 }
 
 async function isBookOwnedByBorrower(bookId, borrowerId, transaction) {
@@ -60,12 +64,13 @@ async function isBookOwnedByBorrower(bookId, borrowerId, transaction) {
       {
         where: {
           book_id: bookId,
-          owner_id: borrowerId
-        }
-      }, transaction
+          owner_id: borrowerId,
+        },
+      },
+      transaction
     );
-    if(!isOwned){
-        return null;
+    if (!isOwned) {
+      return null;
     }
     return isOwned;
   } catch (error) {
@@ -100,8 +105,56 @@ async function createBookRequest(borrowerId, lenderId, bookId, transaction) {
   }
 }
 
+async function fetchListOfRequestedBooksByUserId(
+  userId,
+  uptoDate,
+  transaction
+) {
+  const requestedBooks = await BookExchange.findAll(
+    {
+      where: {
+        borrower_id: userId,
+        request_date: {
+          [Op.lte]: uptoDate,
+        },
+      },
+      include: [
+        {
+          model: Book,
+          attributes: ["book_id", "book_name", "author_name"],
+        },
+        {
+          model: User,
+          attributes: [
+            "user_id",
+            "user_name",
+            "registration_number",
+            "email_id",
+          ],
+        },
+      ],
+      attributes: ["request_date"],
+      order: [["request_date", "DESC"]],
+    },
+    transaction
+  );
+
+  return requestedBooks.map((exchange) => ({
+    book_id: exchange.Book.book_id,
+    book_name: exchange.Book.book_name,
+    author_name: exchange.Book.author_name,
+    requested_date: exchange.request_date,
+    lender_id: exchange.User.user_id,
+    lender_name: exchange.User.user_name,
+    lender_registration_number: exchange.User.registration_number,
+    lender_email: exchange.User.email_id,
+  }));
+}
+
 export {
   checkBookAvailability,
   checkAlreadyBookBorrowedByUserId,
-  isBookOwnedByBorrower, createBookRequest,
+  isBookOwnedByBorrower,
+  createBookRequest,
+  fetchListOfRequestedBooksByUserId,
 };
