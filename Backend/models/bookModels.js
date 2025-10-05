@@ -1,6 +1,9 @@
+import { Op } from "sequelize";
+
 import Book from "./book.js";
 import User from "./user.js";
 import BookUser from "./bookUser.js";
+import BookExchanged from "./bookExchange.js";
 
 async function getAllBooks(transaction) {
   try {
@@ -158,6 +161,60 @@ async function updateBookModel(bookId, isbn, publishedYear, transaction){
   }
 }
 
+async function checkBookStatus(bookId, userId, transaction) {
+  try {
+    const ongoingExchanges = await BookExchanged.findAll({
+      where: {
+        book_id: bookId,
+        lender_id: userId,
+        returned_date: null,
+        status: { [Op.in]: ["Accepted", "Pending", "Overdue"] },
+      },
+      transaction,
+    });
+    return ongoingExchanges.length > 0;
+  } catch (error) {
+    console.error(
+      "Sequelize error while checking exchange status:",
+      error.message
+    );
+    throw error;
+  }
+}
+
+async function checkBookIsDeleted(bookId, userId, transaction) {
+  try {
+    const link = await BookUser.findOne({
+      where: { book_id: bookId, owner_id: userId, is_deleted: true },
+      transaction
+    });
+    if(!link){
+      return null;
+    }
+    return link;
+  } catch (error) {
+    console.error("Sequelize error while checking if book is deleted:", error.message);
+    throw error;
+  }
+}
+
+async function deleteBookUserLink(bookId, userId, transaction) {
+  try {
+    const deletion = await BookUser.update(
+      { is_deleted: true },
+      { where: { book_id: bookId, owner_id: userId }, transaction }
+    );
+    if(!deletion){
+      throw new Error("Book-User link deletion failed. User might not be the owner of the book.");
+    }
+    return deletion;
+  } catch (error) {
+    console.error("Sequelize error while deleting book-user link:", error.message);
+    throw error;
+  }
+}
+
+
 export {
   getAllBooks,
   getBookByBookId,
@@ -167,4 +224,7 @@ export {
   updateBookCount,
   linkBookToUser,
   updateBookModel,
+  checkBookStatus,
+  checkBookIsDeleted,
+  deleteBookUserLink,
 };

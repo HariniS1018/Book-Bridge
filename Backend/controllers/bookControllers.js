@@ -3,6 +3,7 @@ import {
   getBookByBookIdService,
   addBookService,
   updateBookService,
+  deleteBookUserLinkService,
 } from "../services/bookServices.js";
 
 async function getAllBooks(req, res, next) {
@@ -57,4 +58,15 @@ async function updateBook(req, res, next) {
   }
 }
 
-export { getAllBooks, fetchBookDetails, addBook, updateBook };
+async function deleteBookUserLink(req, res, next) {
+  try {
+    const bookId = req.body.bookId;
+    const userId = req.user.userId;
+    const deletion = await deleteBookUserLinkService(bookId, userId);
+    res.status(200).json(deletion);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export { getAllBooks, fetchBookDetails, addBook, updateBook, deleteBookUserLink };

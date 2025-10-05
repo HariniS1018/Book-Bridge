@@ -50,6 +50,10 @@ const BookUser = sequelize.define(
       allowNull: false,
       defaultValue: "Available",
     },
+    is_deleted: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
   },
   {
     tableName: "books_users",

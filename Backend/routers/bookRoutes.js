@@ -7,6 +7,7 @@ import {
   fetchBookDetails,
   addBook,
   updateBook,
+  deleteBookUserLink
 } from "../controllers/bookControllers.js";
 
 booksRoutes.get("/getAllBooks", authenticateToken, getAllBooks);
@@ -17,4 +18,7 @@ booksRoutes.get(
 );
 booksRoutes.post("/addBook", authenticateToken, addBook);
 booksRoutes.put("/updateBook", authenticateToken, updateBook);
+booksRoutes.delete("/deleteBookUserLink", authenticateToken, deleteBookUserLink);
+
+
 export { booksRoutes };

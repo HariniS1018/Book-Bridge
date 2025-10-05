@@ -8,6 +8,9 @@ import {
   CheckLinkedBookToUser,
   updateBookCount,
   updateBookModel,
+  deleteBookUserLink,
+  checkBookIsDeleted,
+  checkBookStatus,
 } from "../models/bookModels.js";
 
 async function getAllBooksService() {
@@ -99,4 +102,19 @@ async function updateBookService(bookId, isbn, publishedYear, userId) {
   });
 }
 
-export { getAllBooksService, getBookByBookIdService, addBookService, updateBookService };
+async function deleteBookUserLinkService(bookId, userId) {
+  return withTransaction(async (transaction) => {
+    const isBookCurrentlyLent = await checkBookStatus(bookId, userId, transaction);
+    if(isBookCurrentlyLent){
+      throw new Error("Cannot delete book-user link. This book is currently lent to someone or has active requests. Accept the return first or reject the requests.");
+    }
+    const isAlreadyDeleted = await checkBookIsDeleted(bookId, userId, transaction);
+    if(isAlreadyDeleted){
+      throw new Error("Book-User link not found or already deleted.");
+    }
+    const deletion = await deleteBookUserLink(bookId, userId, transaction);
+    return deletion;
+  });
+}
+
+export { getAllBooksService, getBookByBookIdService, addBookService, updateBookService, deleteBookUserLinkService };
