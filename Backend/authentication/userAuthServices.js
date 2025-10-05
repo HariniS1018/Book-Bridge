@@ -31,19 +31,13 @@ function generateAccessToken(user) {
 }
 
 function generateRefreshToken(user) {
-  console.log("Type of REFRESH_TOKEN_LIFETIME:", typeof REFRESH_TOKEN_LIFETIME);
-
+  
   const now = new Date();
   const expirationDate = new Date(now);
 
   expirationDate.setDate(now.getDate() + REFRESH_TOKEN_LIFETIME); // safe now
 
-  console.log("Current time:", now.toISOString());
-  console.log("REFRESH_TOKEN_LIFETIME:", REFRESH_TOKEN_LIFETIME);
-  console.log("Expires on:", expirationDate.toISOString());
-
   const expires_in = Math.floor(expirationDate.getTime() / 1000);
-  console.log("Refresh token expires at (epoch):", expires_in);
   
   const refreshToken = jwt.sign(
     { userId: user.user_id,role: user.role,  exp: expires_in },

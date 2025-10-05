@@ -20,7 +20,7 @@ app.use(
 import { userAuthRoutes } from "./authentication/userAuthRoutes.js";
 app.use("/userAuth", userAuthRoutes);
 
-import { booksRoutes } from "./routers/booksRoutes.js";
+import { booksRoutes } from "./routers/bookRoutes.js";
 app.use("/books", booksRoutes);
 
 app.use(notFoundHandler); // Catch-all 404
