@@ -17,9 +17,6 @@ app.use(
   })
 );
 
-// import dbRoutes from "./db/createTableRoutes.js";
-// app.use("/db", dbRoutes);
-
 import { userAuthRoutes } from "./authentication/userAuthRoutes.js";
 app.use("/userAuth", userAuthRoutes);
 
