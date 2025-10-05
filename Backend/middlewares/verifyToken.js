@@ -30,6 +30,7 @@ const authenticateToken = (req, res, next) => {
     }
 
     req.user = user; // Attach the decoded payload (user data) to the request object
+    console.log("Authenticated user:", user);
 
     next(); // Continue to the next middleware or route handler
   });

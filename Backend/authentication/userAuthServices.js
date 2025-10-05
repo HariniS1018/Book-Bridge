@@ -25,7 +25,7 @@ if (!ACCESS_TOKEN_SECRET || !REFRESH_TOKEN_SECRET) {
   throw new Error("Set JWT SECRETS as environment variables");
 }
 function generateAccessToken(user) {
-  return jwt.sign({ userId: user.user_id }, ACCESS_TOKEN_SECRET, {
+  return jwt.sign({ userId: user.user_id, role: user.role }, ACCESS_TOKEN_SECRET, {
     expiresIn: ACCESS_TOKEN_LIFETIME,
   });
 }
@@ -46,7 +46,7 @@ function generateRefreshToken(user) {
   console.log("Refresh token expires at (epoch):", expires_in);
   
   const refreshToken = jwt.sign(
-    { userId: user.user_id, exp: expires_in },
+    { userId: user.user_id,role: user.role,  exp: expires_in },
     REFRESH_TOKEN_SECRET
   );
 
