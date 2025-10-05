@@ -1,6 +1,6 @@
 import Book from "./book.js";
 
-async function getAllBooksModels(transaction) {
+async function getAllBooks(transaction) {
   try {
     const books = await Book.findAll({ transaction });
     if (books.length === 0) {
@@ -12,7 +12,7 @@ async function getAllBooksModels(transaction) {
   }
 }
 
-async function getBookById(id, transaction) {
+async function getBookByBookId(id, transaction) {
   try {
     const book = await Book.findByPk(id, { transaction });
     if (!book) {
@@ -24,14 +24,20 @@ async function getBookById(id, transaction) {
   }
 }
 
-async function createBook(bookName, authorName, isbn, publishedYear) {
+async function createBook(
+  bookName,
+  authorName,
+  isbn,
+  publishedYear,
+  transaction
+) {
   try {
     const newBook = await Book.create({
       bookName,
       authorName,
       isbn,
       publishedYear,
-    });
+    }, { transaction });
     if (!newBook) {
       throw new Error("Book creation failed");
     }
@@ -40,4 +46,4 @@ async function createBook(bookName, authorName, isbn, publishedYear) {
     throw new Error("Error creating book");
   }
 }
-export { getAllBooksModels, getBookById, createBook };
+export { getAllBooks, getBookByBookId, createBook };
