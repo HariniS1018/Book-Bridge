@@ -10,7 +10,11 @@ import {
 } from "../controllers/bookControllers.js";
 
 booksRoutes.get("/getAllBooks", authenticateToken, getAllBooks);
-booksRoutes.get("/fetchBookDetails/:id", authenticateToken, fetchBookDetails);
+booksRoutes.get(
+  "/fetchBookDetails/:bookId",
+  authenticateToken,
+  fetchBookDetails
+);
 booksRoutes.post("/addBook", authenticateToken, addBook);
 booksRoutes.put("/updateBook", authenticateToken, updateBook);
 export { booksRoutes };

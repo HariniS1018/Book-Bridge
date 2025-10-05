@@ -19,7 +19,7 @@ async function getAllBooks(req, res, next) {
 
 async function fetchBookDetails(req, res, next) {
   try {
-    const bookId = req.params.id;
+    const bookId = req.params.bookId;
     const book = await getBookByBookIdService(bookId);
     if (!book) {
       return res.status(404).json({ message: "Book not found" });
