@@ -320,20 +320,6 @@ const jwtVerifyPromise = (token, secret) => {
   });
 };
 
-async function authenticateTokenService(authHeader) {
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    throw new Error("Authorization header is missing or invalid");
-  }
-
-  const token = authHeader.split(" ")[1];
-
-  try {
-    const decoded = await jwtVerifyPromise(token, ACCESS_TOKEN_SECRET);
-    return decoded;
-  } catch (err) {
-    throw new Error("Invalid or expired access token");
-  }
-}
 
 export {
   registerUserService,
@@ -344,5 +330,4 @@ export {
   verifyAndUpdatePasswordService,
   refreshAccessTokenService,
   logoutUserService,
-  authenticateTokenService,
 };
