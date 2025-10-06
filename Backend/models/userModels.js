@@ -1,4 +1,5 @@
 import User from "./user.js"; 
+import Book from "./book.js";
 
 async function getProfileDetailsModel(userId, transaction) {
   try {
@@ -67,4 +68,34 @@ async function deleteUserModel(userId, transaction) {
   }
 }
 
-export { getProfileDetailsModel, updateProfileModel, deleteUserModel };
+
+async function getUserBookListModel(userId, transaction) {
+  try {
+    const user = await User.findByPk(userId, {
+      attributes: ['user_id', 'user_name'], 
+      transaction,
+      include: [
+        {
+          model: Book,
+          attributes: ['book_name', 'author_name', 'publication_year'], 
+          through: {
+            attributes: ['count', 'available_count', 'availability_status'], 
+            where: { is_deleted: false } 
+          },
+        },
+      ],
+    });
+
+    if (!user) {
+      return null;
+    }
+    
+    return user.Books || []; 
+
+  } catch (error) {
+    console.error("Error fetching user book list:", error);
+    throw new Error("Error fetching the list of books owned by the user.");
+  }
+}
+
+export { getProfileDetailsModel, updateProfileModel, deleteUserModel,getUserBookListModel };

@@ -1,4 +1,4 @@
-import { getProfileDetailsService,updateProfileDetailsService,deleteUserService } from "../services/userService.js";
+import { getProfileDetailsService,updateProfileDetailsService,deleteUserService,getUserBookListService } from "../services/userService.js";
 
 async function getProfileDetails(req, res, next) {
   try {
@@ -19,6 +19,30 @@ async function getProfileDetails(req, res, next) {
   } catch (error) {
     next(error);
   }
+}
+
+async function getUserBookList(req, res, next) {
+    try {
+        const userId = req.user.userId; 
+
+        if (!userId) {
+            return res.status(401).json({ message: "Authentication required." });
+        }
+
+        const bookList = await getUserBookListService(userId);
+
+        if (!bookList || bookList.length === 0) {
+             return res.status(200).json({ 
+                message: "you have no books added", 
+                books: []
+             });
+        }
+        
+        res.status(200).json(bookList);
+
+    } catch (error) {
+        next(error);
+    }
 }
 async function updateProfileDetails(req, res, next) {
     try {
@@ -87,4 +111,4 @@ async function deleteUser(req, res, next) {
 }
 
 
-export { getProfileDetails,updateProfileDetails,deleteUser };
+export { getProfileDetails,updateProfileDetails,deleteUser,getUserBookList };

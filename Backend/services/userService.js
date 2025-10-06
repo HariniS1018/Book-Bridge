@@ -1,5 +1,5 @@
 import { withTransaction } from "../db/transactionHandler.js";
-import { getProfileDetailsModel,updateProfileModel,deleteUserModel } from "../models/userModels.js";
+import { getProfileDetailsModel,updateProfileModel,deleteUserModel,getUserBookListModel } from "../models/userModels.js";
 
 async function getProfileDetailsService(userId) {
   return withTransaction(async (transaction) => {
@@ -7,6 +7,14 @@ async function getProfileDetailsService(userId) {
     return userProfile;
   });
 }
+
+async function getUserBookListService(userId) {
+  return withTransaction(async (transaction) => {
+    const bookList = await getUserBookListModel(userId, transaction);
+    return bookList;
+  });
+}
+
 
 async function updateProfileDetailsService(userId, updateData) {
   return withTransaction(async (transaction) => {
@@ -28,4 +36,4 @@ async function deleteUserService(userId) {
 
 
 
-export { getProfileDetailsService,updateProfileDetailsService,deleteUserService };
+export { getProfileDetailsService,getUserBookListService,updateProfileDetailsService,deleteUserService };

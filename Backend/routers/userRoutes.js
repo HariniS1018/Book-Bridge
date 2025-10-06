@@ -6,12 +6,16 @@ import {
   getProfileDetails,
   updateProfileDetails,
   deleteUser,
+  getUserBookList
+
   
 } from "../controllers/userControllers.js";
 
 userRoutes.get("/getProfileDetails", authenticateToken, getProfileDetails);
+userRoutes.get("/booksList", authenticateToken, getUserBookList);
 userRoutes.put("/updateProfileDetails",authenticateToken,updateProfileDetails);
 userRoutes.delete("/deleteUser",authenticateToken,deleteUser)
+
 
 
 export { userRoutes };
