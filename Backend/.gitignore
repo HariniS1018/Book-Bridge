@@ -19,6 +19,7 @@ Thumbs.db   # Windows
 
 # Ignore node modules and build directories
 node_modules/
+/test/
 
 *.docx
 /Docs/*.docx

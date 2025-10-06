@@ -1,0 +1,76 @@
+errorHandler:-
+1. It must have 4 params (These 4 params says to Express that i am error Handler):
+    - err: the error object
+    - req: incoming request
+    - res: response object
+    - next: Express’s next function (not used here, but required for signature)
+2. If it is a development environment, store the stack trace and display for debugging.
+    Else, hide the sensitive information and show only the error message.
+3. set this environment variable to work `process.env.NODE_ENV`
+4. How to Use It
+In your main app.js or server.js, after all routes:
+import { errorHandler } from "./middlewares/errorHandler.js";
+
+app.use(errorHandler); // 👈 must be last
+
+5. res.status(statusCode).json({...})
+    - res.status(statusCode) sets the HTTP status code (like 404, 500).
+    - .json({...}) sends a JSON response to the client.
+
+6. ...(process.env.NODE_ENV === "development" && { ... })
+    - If you're in development mode, the expression evaluates to:
+        {
+        error: " SOME ERROR MESSAGE",
+        details: err.message,
+        stack: errorStack
+        }
+    - If you're in production, the expression evaluates to false, and ...false does nothing.
+    - So the spread syntax conditionally adds details and stack only in development.
+
+7. Original (Spread syntax):
+res.status(statusCode).json({
+  error: errorMessage,
+  ...(process.env.NODE_ENV === "development" && {
+    details: err.message,
+    stack: errorStack,
+  }),
+});
+
+Rewritten (if block syntax):
+const responseBody = {
+  error: errorMessage,
+};
+
+if (process.env.NODE_ENV === "development") {
+  responseBody.details = err.message;
+  responseBody.stack = errorStack;
+}
+
+res.status(statusCode).json(responseBody);
+
+
+----------------------------------
+
+
+notFoundHandler:-
+1. Defines a middleware function with the standard Express signature:
+    - req: incoming request
+    - res: response object
+    - next: used to pass control to the next middleware (in this case, the error handler)
+
+2. const error = new Error(...)
+Creates a new Error object with a message like:
+"Can't find /some/invalid/path on this server!"
+
+3. Then set the statusCode and pass it to errorHandler.
+
+
+--------------
+
+
+verifyToken:-
+1. Authorization header must be fixed. The header must be Bearer token, not basic or something else. We set this in postman, in authorization tab.
+2. Then split the authorization header by space and extract token from it.
+3. Compare this token with the secret key to find if it is invalid or valid token.
+4. If it is invalid, send Forbidden status else attach the decoded payload (user data), extracted from token and attach to the request object.
+5. Use next() to execute next function or line from where this function is called. It is called in each router, so once authenticated, the request is processed (moves to controller) to get a response.
