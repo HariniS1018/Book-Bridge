@@ -6,6 +6,10 @@ import {
   fetchListOfRequestedBooksByUserId,
   updateBookRequestStatusByLender,
   getRequestStatusByLender,
+  updateReturnedDateByLender,
+  getBorrowDateByLender,
+  updateBorrowAndDueDateByLender,
+
 } from "../models/bookExchangeModels.js";
 import { withTransaction } from "../db/transactionHandler.js";
 
@@ -83,4 +87,47 @@ async function updateBookRequestStatusByLenderService(lenderId, borrowerId, book
   });
 }
 
-export { createBookRequestService, fetchListOfRequestedBooksByUserIdService, updateBookRequestStatusByLenderService };
+async function updateExchangeDatesService(lenderId,borrowerId,bookId,dueDate,returnedDate) {
+  return withTransaction(async (transaction) => {
+    const currentStatus = await getRequestStatusByLender(lenderId,borrowerId,bookId,transaction);
+
+    if (!currentStatus) {
+      throw new Error("No matching book exchange record found.");
+    }
+
+    if (dueDate && !returnedDate) {
+      if (currentStatus !== "Accepted") {
+        throw new Error("Borrow and due dates can only be updated for 'Accepted' requests.");
+      }
+
+      const borrowDate = new Date(); 
+      if (new Date(dueDate) < borrowDate) {
+        throw new Error("Due date cannot be earlier than current borrow date.");
+      }
+
+      const updatedRowsCount = await updateBorrowAndDueDateByLender(lenderId,borrowerId,bookId,borrowDate,dueDate,transaction);
+
+      return updatedRowsCount;
+    }
+
+    if (returnedDate && !dueDate) {
+      if (currentStatus !== "Returned") {
+        throw new Error("Returned date can only be updated for 'Returned' status.");
+      }
+
+      const borrowDate = await getBorrowDateByLender(lenderId, borrowerId, bookId, transaction);
+      if (borrowDate && new Date(returnedDate) < new Date(borrowDate)) {
+        throw new Error("Returned date cannot be earlier than borrow date.");
+      }
+
+      const updatedRowsCount = await updateReturnedDateByLender(lenderId,borrowerId,bookId,returnedDate,transaction);
+
+      return updatedRowsCount;
+    }
+
+    throw new Error("Invalid combination of inputs provided.");
+  });
+}
+
+
+export { createBookRequestService, fetchListOfRequestedBooksByUserIdService, updateBookRequestStatusByLenderService,updateExchangeDatesService };

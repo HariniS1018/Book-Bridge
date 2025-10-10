@@ -208,6 +208,71 @@ async function updateBookRequestStatusByLender(
     throw error;
   }
 }
+async function updateBorrowAndDueDateByLender(lenderId,borrowerId,bookId,borrowDate,dueDate,transaction) {
+  try {
+    const [updatedRowsCount] = await BookExchange.update(
+      {
+        borrow_date: borrowDate,
+        due_date: dueDate,
+      },
+      {
+        where: {
+          borrower_id: borrowerId,
+          lender_id: lenderId,
+          book_id: bookId,
+        },
+        transaction,
+      }
+    );
+
+    if (updatedRowsCount === 0) {
+      throw new Error("No matching book exchange record found to update borrow and due date.");
+    }
+
+    return updatedRowsCount;
+  } catch (error) {
+    console.log("Sequelize error while updating borrow/due date: ", error.message);
+    throw error;
+  }
+}
+async function getBorrowDateByLender(lenderId, borrowerId, bookId, transaction) {
+  const exchange = await BookExchange.findOne({
+    where: {
+      borrower_id: borrowerId,
+      lender_id: lenderId,
+      book_id: bookId,
+    },
+    attributes: ["borrow_date"],
+    transaction,
+  });
+
+  return exchange ? exchange.borrow_date : null;
+}
+
+async function updateReturnedDateByLender(lenderId,borrowerId,bookId,returnedDate,transaction) {
+  try {
+    const [updatedRowsCount] = await BookExchange.update(
+      { returned_date: returnedDate },
+      {
+        where: {
+          borrower_id: borrowerId,
+          lender_id: lenderId,
+          book_id: bookId,
+        },
+        transaction,
+      }
+    );
+
+    if (updatedRowsCount === 0) {
+      throw new Error("No matching book exchange record found to update returned date.");
+    }
+
+    return updatedRowsCount;
+  } catch (error) {
+    console.log("Sequelize error while updating returned date: ", error.message);
+    throw error;
+  }
+}
 
 
 export {
@@ -218,4 +283,7 @@ export {
   fetchListOfRequestedBooksByUserId,
   updateBookRequestStatusByLender,
   getRequestStatusByLender,
+  updateBorrowAndDueDateByLender,
+  getBorrowDateByLender,
+  updateReturnedDateByLender
 };
