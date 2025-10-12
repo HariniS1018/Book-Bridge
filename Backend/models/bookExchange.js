@@ -30,6 +30,7 @@ const BookExchange = sequelize.define(
       type: DataTypes.ENUM(
         "Pending",
         "Accepted",
+        // "Borrowed", // update status while book is borrowed.
         "Rejected",
         "Returned",
         "Overdue"

@@ -5,7 +5,7 @@ import User from "./user.js";
 import BookUser from "./bookUser.js";
 import BookExchanged from "./bookExchange.js";
 
-async function getAllBooks(transaction) {
+async function getAllBooks(transaction) {   // only if count is > 0
   try {
     const books = await Book.findAll({ transaction });
     if (books.length === 0) {
@@ -18,7 +18,7 @@ async function getAllBooks(transaction) {
   }
 }
 
-async function getBookByBookId(id, transaction) {
+async function getBookByBookId(id, transaction) {   // only if count is > 0
   try {
     const book = await Book.findByPk(id, {
       transaction,
@@ -77,7 +77,7 @@ async function createBook(
   
 }
 
-async function getBookByBookDetails(
+async function getBookByBookDetails(    // only if count > 0
   bookName,
   authorName,
   isbn,
@@ -185,7 +185,7 @@ async function checkBookStatus(bookId, userId, transaction) {
 async function checkBookIsDeleted(bookId, userId, transaction) {
   try {
     const link = await BookUser.findOne({
-      where: { book_id: bookId, owner_id: userId, is_deleted: true },
+      where: { book_id: bookId, owner_id: userId, is_deleted: true },   // is count 0?
       transaction
     });
     if(!link){
@@ -200,7 +200,7 @@ async function checkBookIsDeleted(bookId, userId, transaction) {
 
 async function deleteBookUserLink(bookId, userId, transaction) {
   try {
-    const deletion = await BookUser.update(
+    const deletion = await BookUser.update(   // reduce the count and available_count by 1
       { is_deleted: true },
       { where: { book_id: bookId, owner_id: userId }, transaction }
     );
