@@ -22,6 +22,7 @@ sequelize
 });
 sequelize.models = models;
 
+
 // Graceful shutdown handlers
 
 //- Triggered when you press Ctrl+C in the terminal. - Closes Sequelize’s DB connection pool. - Exits with code 0 (success).
