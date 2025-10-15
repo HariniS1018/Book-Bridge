@@ -1,0 +1,22 @@
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# IDE/editor configs
+.vscode/
+.idea/
+
+# Docs
+*.docx
+/Docs/*.docx
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.*
+
+# Misc
+*.swp
+*.swo
