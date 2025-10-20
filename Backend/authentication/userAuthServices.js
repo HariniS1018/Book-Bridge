@@ -302,19 +302,6 @@ async function logoutUserService(BearerHeader) {
   return true;
 }
 
-const jwtVerifyPromise = (token, secret) => {
-  return new Promise((resolve, reject) => {
-    jwt.verify(token, secret, (err, decoded) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(decoded);
-      }
-    });
-  });
-};
-
-
 export {
   registerUserService,
   verifyOtpAndRegisterUserService,
