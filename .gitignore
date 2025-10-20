@@ -7,8 +7,8 @@ Thumbs.db
 .idea/
 
 # Docs
-*.docx
-/Docs/*.docx
+# *.docx
+# /Docs/*.docx
 
 # Logs
 *.log
