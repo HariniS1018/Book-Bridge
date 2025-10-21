@@ -9,6 +9,7 @@ Thumbs.db
 # Docs
 # *.docx
 # /Docs/*.docx
+/Docs/diagrams/*.drawio
 
 # Logs
 *.log
