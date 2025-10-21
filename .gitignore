@@ -7,8 +7,9 @@ Thumbs.db
 .idea/
 
 # Docs
-*.docx
-/Docs/*.docx
+# *.docx
+# /Docs/*.docx
+/Docs/diagrams/*.drawio
 
 # Logs
 *.log
